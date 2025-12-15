@@ -41,7 +41,7 @@ public partial class HifunPCBController : Form
         }
 
         // 1. 일반 텍스트로 표시 (깨진 문자일 경우 대비)
-        // rtbLog.AppendText($"[RX] {data}\r\n");
+        rtbLog.AppendText($"[RX-ASCII] {data}\r\n");
 
         // 2. HEX 코드로 변환하여 표시 (디버깅에 훨씬 유리함)
         string hexOutput = "";
