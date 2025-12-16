@@ -198,7 +198,7 @@ public class HifunPCB
 
                 string response = testPort.ReadExisting();
 
-                LogMessage?.Invoke($"연결 성공: {port} (9600bps)");
+                LogMessage?.Invoke($"연결 성공: {port} ({testPort.BaudRate}bps)");
 
                 // 검증: '7E' 혹은 '~'가 포함되어 있는지 확인
                 // HEX값 7E는 ASCII로 '~'입니다.
@@ -229,8 +229,8 @@ public class HifunPCB
             if (serialPort.IsOpen) serialPort.Close();
             serialPort.PortName = portName;
             serialPort.BaudRate = 9600;
-            serialPort.DataBits = 8;
-            serialPort.StopBits = StopBits.One;
+            serialPort.DataBits = 7;
+            serialPort.StopBits = StopBits.Two;
             serialPort.Parity = Parity.None;
             serialPort.ReadTimeout = 500;
 
@@ -238,7 +238,7 @@ public class HifunPCB
             serialPort.DataReceived += serialPort_DataReceived;
 
             serialPort.Open();
-            LogMessage?.Invoke($"연결 성공: {portName} (9600bps)");
+            LogMessage?.Invoke($"연결 성공: {portName} ({serialPort.BaudRate}bps)");
             return true;
         }
         catch(Exception ex)
