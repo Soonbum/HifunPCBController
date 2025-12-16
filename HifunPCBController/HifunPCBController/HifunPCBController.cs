@@ -127,6 +127,9 @@ public class HifunPCB
     public event Action<string> DataReceived;
     public event Action<string> LogMessage;
 
+    // 수신 버퍼
+    private StringBuilder rxBuffer = new();
+
     // --- [상태 관리 변수] (C++ pGVariable 대응) ---
     public string TargetMotorPosition { get; set; } = "0"; // 7E01용
     public string TargetMotorSpeed { get; set; } = "100";  // 7E04용
@@ -264,11 +267,50 @@ public class HifunPCB
     {
         try
         {
-            // 들어온 데이터를 읽어서 이벤트 발생
-            string data = serialPort.ReadExisting();
-            DataReceived?.Invoke(data);
+            // 현재 포트에 들어와 있는 데이터를 몽땅 읽어서 버퍼에 추가
+            string rawData = serialPort.ReadExisting();
+            rxBuffer.Append(rawData);
+
+            // 버퍼 내용을 문자열로 확인
+            // (효율을 위해 loop 안에서 계속 ToString() 하는 것보다 처리 방식이 중요)
+            while (true)
+            {
+                string content = rxBuffer.ToString();
+
+                // 종료 문자 찾기 (여기서는 '\r' CR을 기준으로 합니다) - 0D(\r)
+                int eolIndex = content.IndexOf('\r');
+
+                // 종료 문자가 없으면? -> 아직 패킷이 다 안 온 것이므로 대기 (루프 종료)
+                if (eolIndex == -1)
+                {
+                    break;
+                }
+
+                // 패킷 추출 (처음부터 ~ \r 앞까지)
+                string packet = content.Substring(0, eolIndex);
+
+                // 버퍼 정리 (추출한 부분 + \r(1글자) 제거)
+                // 데이터가 "... \r\n" 형식이라면 \r 뒤에 \n이 남습니다. 
+                // 이는 다음 턴에서 Trim()으로 제거되거나 여기서 +2를 해서 지울 수도 있습니다.
+                rxBuffer.Remove(0, eolIndex + 1);
+
+                // 패킷 다듬기 (앞뒤 공백, \n 등 제거)
+                packet = packet.Trim();
+
+                // 유효한 내용이 있을 때만 이벤트 발생
+                if (!string.IsNullOrEmpty(packet))
+                {
+                    // UI 스레드 처리는 이벤트를 받는 쪽에서 Invoke 하거나,
+                    // 여기서 바로 DataReceived?.Invoke(packet); 호출
+                    DataReceived?.Invoke(packet);
+                }
+            }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            // 에러 처리 (로그 등)
+            Console.WriteLine($"Serial Error: {ex.Message}");
+        }
     }
 
     public void WriteAllCommand()
