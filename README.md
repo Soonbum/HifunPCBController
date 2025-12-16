@@ -18,8 +18,9 @@ HIFUN PCB 보드 컨트롤러입니다.
   - 보드로 보낼 때 줄바꿈 문자는 "CR+LF"이어야 함
 
 * HIFUN PCB 보드 -- USB-TTL 컨버터
-  - 연결 조건: 9600/8/1/NoneParity/NoFlowControl
+  - 연결 조건: BaudRate:9600 / DataBit:7 / StopBit:2 / Parity:None / FlowControl:No
   - 핀 연결 (39번 -- GND, 32번 -- RXD, 33번 -- TXD)
+  - 선 간의 노이즈를 줄여야 함 (차폐 또는 Twisted)
 
 ![20251211_123058](https://github.com/user-attachments/assets/452739a4-3e71-4384-8486-cff623d7308b)
 ![20251211_123109](https://github.com/user-attachments/assets/8ed996d8-96d6-4b74-aaac-3a3264ae7006)
