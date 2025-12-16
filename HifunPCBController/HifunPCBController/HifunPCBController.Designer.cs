@@ -38,6 +38,7 @@
             rtbLog = new RichTextBox();
             btnClear = new Button();
             btnBuzzerOff = new Button();
+            btnListen = new Button();
             SuspendLayout();
             // 
             // cboPorts
@@ -136,11 +137,22 @@
             btnBuzzerOff.UseVisualStyleBackColor = true;
             btnBuzzerOff.Click += btnBuzzerOff_Click;
             // 
+            // btnListen
+            // 
+            btnListen.Location = new Point(252, 41);
+            btnListen.Name = "btnListen";
+            btnListen.Size = new Size(113, 45);
+            btnListen.TabIndex = 10;
+            btnListen.Text = "Listen";
+            btnListen.UseVisualStyleBackColor = true;
+            btnListen.Click += btnListen_Click;
+            // 
             // HifunPCBController
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(498, 577);
+            Controls.Add(btnListen);
             Controls.Add(btnBuzzerOff);
             Controls.Add(btnClear);
             Controls.Add(rtbLog);
@@ -169,5 +181,6 @@
         private RichTextBox rtbLog;
         private Button btnClear;
         private Button btnBuzzerOff;
+        private Button btnListen;
     }
 }

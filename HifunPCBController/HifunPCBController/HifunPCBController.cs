@@ -50,6 +50,8 @@ public partial class HifunPCBController : Form
             hexOutput += ((int)c).ToString("X2") + " ";
         }
 
+        // 수신된 데이터가 많으면 로그가 지저분해지므로, 
+        // 간단한 텍스트 수신 시에는 HEX 로그를 생략하고 싶다면 주석 처리할 것
         rtbLog.SelectionColor = Color.Blue;
         rtbLog.AppendText($"[RX-HEX] {hexOutput.Trim()}\r\n");
         rtbLog.SelectionColor = Color.Black;
@@ -116,6 +118,19 @@ public partial class HifunPCBController : Form
     private void btnClear_Click(object sender, EventArgs e)
     {
         rtbLog.Clear();
+    }
+
+    private void btnListen_Click(object sender, EventArgs e)
+    {
+        if (cboPorts.SelectedItem != null)
+        {
+            // 명령을 보내지 않고, 표준 설정(8N1)으로 듣기만 합니다.
+            HifunBoard.ConnectListen(cboPorts.SelectedItem.ToString());
+        }
+        else
+        {
+            MessageBox.Show("포트를 먼저 선택해주세요.");
+        }
     }
 }
 
@@ -205,7 +220,7 @@ public class HifunPCB
 
                 // 검증: '7E' 혹은 '~'가 포함되어 있는지 확인
                 // HEX값 7E는 ASCII로 '~'입니다.
-                if (response.Contains("7E") || response.Contains("~") || response.Length > 2)
+                if (response.Contains("7E") || response.Contains('~') || response.Length > 2)
                 {
                     LogMessage?.Invoke($"장치 발견: {port}");
                     testPort.Close();
@@ -232,8 +247,8 @@ public class HifunPCB
             if (serialPort.IsOpen) serialPort.Close();
             serialPort.PortName = portName;
             serialPort.BaudRate = 9600;
-            serialPort.DataBits = 7;
-            serialPort.StopBits = StopBits.Two;
+            serialPort.DataBits = 8;    // 또는 7
+            serialPort.StopBits = StopBits.One; // 또는 Two
             serialPort.Parity = Parity.None;
             serialPort.ReadTimeout = 500;
 
@@ -262,6 +277,38 @@ public class HifunPCB
         }
     }
 
+    // [추가] 수신 테스트용 연결 (표준 8N1 설정)
+    // "Hello" 같은 일반 텍스트는 보통 8비트, StopBit 1을 사용합니다.
+    public bool ConnectListen(string portName)
+    {
+        try
+        {
+            if (serialPort.IsOpen) serialPort.Close();
+
+            serialPort.PortName = portName;
+            serialPort.BaudRate = 9600;
+
+            // [중요] 일반 텍스트 수신을 위한 표준 설정
+            serialPort.DataBits = 8;            // 8비트
+            serialPort.StopBits = StopBits.One; // Stop Bit 1
+            serialPort.Parity = Parity.None;    // 패리티 없음
+            serialPort.ReadTimeout = 500;
+
+            // 기존 이벤트 핸들러 재사용 (파싱 로직은 동일하게 \r 기준이므로 작동함)
+            serialPort.DataReceived += serialPort_DataReceived;
+
+            serialPort.Open();
+            LogMessage?.Invoke($"연결 성공 (Listen Mode): {portName} (9600bps, 8N1)");
+            LogMessage?.Invoke("데이터 수신 대기 중...");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            LogMessage?.Invoke($"Listen 연결 오류: {ex.Message}");
+            return false;
+        }
+    }
+
     // 수신 처리
     private void serialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
     {
@@ -287,7 +334,7 @@ public class HifunPCB
                 }
 
                 // 패킷 추출 (처음부터 ~ \r 앞까지)
-                string packet = content.Substring(0, eolIndex);
+                string packet = content[..eolIndex];
 
                 // 버퍼 정리 (추출한 부분 + \r(1글자) 제거)
                 // 데이터가 "... \r\n" 형식이라면 \r 뒤에 \n이 남습니다. 
@@ -317,7 +364,7 @@ public class HifunPCB
     {
         if (!IsConnected) return;
 
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new();
 
         // 1. 모터 이동 (7E01)
         // C++: "7E01" + PositionValue + "0,"
